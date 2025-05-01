@@ -274,15 +274,16 @@ with tab3:
     with st.expander("📋 Summary / Conclusion (Problem 3)"):
         st.subheader('Conclusion')
 
-        conclusion_text_p2 = ("""In this phase of the analysis, we focused on uncovering behavioral patterns associated with company vehicles, based on cleaned GPS records and transaction timestamps.
+        conclusion_text_p2 = ("""
+            We conducted an analysis to determine whether the owners of credit cards and loyalty cards could be inferred from the available data. Based on spatial-temporal correlation between credit card transaction timestamps and GPS data from company vehicles, we found that ownership inference is only plausible for a small subset of credit cards, and not feasible for loyalty cards. Specifically, only 2 out of 55 credit cards demonstrated a strong co-location pattern—where a high percentage of transactions consistently aligned with the presence of a particular vehicle. These few instances suggest possible ownership. However, the remaining cards showed weak or inconsistent overlap, making confident identification unlikely.
 
-    By generating a heatmap of vehicle statuses (idle, active, or missing data) on an hourly basis, we were able to visualize car behavior across each day. These patterns revealed that while many vehicles were inactive or missing data for large portions of the day, certain cars showed consistent activity at regular working hours.
+            Our evidence is drawn from the calculation of a “match ratio” for each card: the proportion of purchases where a vehicle was detected nearby (within a 1-minute window). For each card, we identified its most frequently matched vehicle and computed this ratio. A histogram of these match ratios reveals a heavily right-skewed distribution, confirming that most cards lack consistent spatial-temporal overlap with any single vehicle.
 
-    To explore behavior in greater depth, we analyzed daily status totals (idle, active, no-data) per car and allowed for user-controlled sorting. This helped expose which vehicles were heavily used versus underutilized on any given date. Additionally, we created summary plots of average daily hours across all 14 days. These average patterns highlighted outliers, such as cars that were disproportionately idle or consistently had gaps in GPS coverage.
+            There are multiple uncertainties in our method. The 1-minute matching window may be too narrow or too broad depending on the logging intervals. Furthermore, proximity alone does not imply ownership—a nearby vehicle does not guarantee the occupant made the transaction. Shared vehicles or cards (e.g., carpooling or team purchases) further complicate interpretation. The assumption that each card belongs to a unique person may not hold true in all cases.
 
-    Finally, we attempted to infer relationships between credit card usage and car presence through co-location analysis. While most cards had weak spatial-temporal overlap with specific cars (under 10% match), a few exhibited stronger ties, potentially indicating ownership. However, substantial gaps in GPS coverage and the lack of direct identifiers limited the strength of these inferences.
-
-    Overall, the results point toward a small number of vehicles being heavily used, while many others remained largely idle. Data sparsity, particularly in GPS tracking, introduces uncertainty that must be considered when interpreting both vehicle activity and card ownership hypotheses.""")
+            There are also significant uncertainties in the data itself. Most vehicles had 17–19 hours per day with no GPS signal, creating large blind spots in possible matches. The absence of precise business coordinates made spatial comparisons approximate. Additionally, loyalty card swipes were relatively sparse and irregular, making them even more difficult to connect meaningfully with individuals. As a result, while there are limited cases where credit card ownership may be reasonably inferred, the majority of records are too ambiguous to draw definitive conclusions.
+            """
+        )
 
         st.markdown(conclusion_text_p2)
 
