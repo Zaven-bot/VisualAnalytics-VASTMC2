@@ -270,6 +270,185 @@ with tab3:
             fig.update_layout(xaxis_type="category", xaxis_title="Car ID", yaxis_title="Average Hours")
             st.plotly_chart(fig)
 
+    # --- Section 6: Animated Vehicle Movement Map (Problem 3, Plotly Edition) ---
+    with st.expander("🗺️ Animated Vehicle Movement Map (Problem 3, Plotly Edition)"):
+        import plotly.express as px
+        import plotly.graph_objects as go
+        import base64
+        import random
+
+        st.subheader("Vehicle Movement Over Time with Map Overlay")
+
+        @st.cache_data
+        def load_gps_data():
+            df = pd.read_csv("Problem-3/plots/gps_mapped_filled.csv", parse_dates=["timestamp"])
+            df["date"] = df["timestamp"].dt.date
+            df["time"] = df["timestamp"].dt.strftime("%H:%M")
+            return df
+
+        df = load_gps_data()
+
+        # --- Format date options with weekday ---
+        unique_dates = sorted(df["date"].unique())
+        date_display = [f"{d} ({pd.to_datetime(d).strftime('%A')})" for d in unique_dates]
+        selected_label = st.selectbox("Select Date", date_display, key="plotly_date_selector")
+        selected_date = str(next(d for d in unique_dates if str(d) in selected_label))
+
+        filtered_day = df[df["date"] == pd.to_datetime(selected_date).date()]
+        all_labels = sorted(filtered_day["label"].dropna().unique())
+        selected_labels = st.multiselect("Select People to Display", all_labels, default=all_labels)
+
+        plot_df = filtered_day[filtered_day["label"].isin(selected_labels)]
+
+        # Assign consistent colors
+        if "label_colors" not in st.session_state:
+            st.session_state.label_colors = {}
+        for label in all_labels:
+            if label not in st.session_state.label_colors:
+                st.session_state.label_colors[label] = f"#{random.randint(0, 0xFFFFFF):06x}"
+        color_map = st.session_state.label_colors
+
+        # Forward-fill for animation continuity
+        all_times = sorted(plot_df["time"].unique())
+        expanded = []
+        for label in selected_labels:
+            person_df = plot_df[plot_df["label"] == label].copy()
+            person_df = person_df.set_index("time").reindex(all_times, method="ffill").reset_index()
+            person_df["label"] = label
+            expanded.append(person_df)
+        full_df = pd.concat(expanded, ignore_index=True)
+
+        # Background image
+        def get_encoded_image(path):
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+
+        encoded_img = get_encoded_image("raw-data/MC2-tourist.jpg")
+        lat_min, lat_max = df["lat"].min(), df["lat"].max()
+        lon_min, lon_max = df["lon"].min(), df["lon"].max()
+        bounds = [[lat_min - 0.003, lon_min + 0.0005], [lat_max + 0.004, lon_max + 0.0005]]
+
+        # --- Speed control ---
+        speed = st.selectbox("Animation Speed", ["Normal", "Fast", "Very Fast"])
+        speed_ms = {"Normal": 300, "Fast": 150, "Very Fast": 50}[speed]
+
+        fig = px.scatter(
+            full_df,
+            x="lon", y="lat",
+            animation_frame="time",
+            animation_group="label",
+            color="label",
+            color_discrete_map=color_map,
+            hover_name="label",
+            height=700,
+        )
+
+        fig.update_traces(marker=dict(size=6), showlegend=True)
+
+        fig.update_layout(
+            title=f"Vehicle Movement on {selected_date}",
+            xaxis=dict(showgrid=False, range=[bounds[0][1], bounds[1][1]]),
+            yaxis=dict(showgrid=False, range=[bounds[0][0], bounds[1][0]], scaleanchor="x"),
+            images=[dict(
+                source=f"data:image/jpg;base64,{encoded_img}",
+                xref="x", yref="y",
+                x=bounds[0][1], y=bounds[1][0],
+                sizex=bounds[1][1] - bounds[0][1],
+                sizey=bounds[1][0] - bounds[0][0],
+                sizing="stretch",
+                opacity=0.75,
+                layer="below"
+            )],
+            updatemenus=[{
+                "type": "buttons",
+                "showactive": False,
+                "x": 0.1, "y": -0.1,
+                "buttons": [
+                    {
+                        "label": "Play",
+                        "method": "animate",
+                        "args": [None, {
+                            "frame": {"duration": speed_ms, "redraw": True},
+                            "fromcurrent": True
+                        }]
+                    },
+                    {
+                        "label": "Pause",
+                        "method": "animate",
+                        "args": [[None], {
+                            "frame": {"duration": 0, "redraw": False},
+                            "mode": "immediate",
+                            "transition": {"duration": 0}
+                        }]
+                    }
+                ]
+            }],
+            margin=dict(r=0, l=0, t=30, b=0),
+            showlegend=True
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+
+    # # --- Section 6: Animated Vehicle Movement Map (Problem 3) ---
+    # with st.expander("🗺️ Animated Vehicle Movement Map (Problem 3)"):
+    #     import plotly.express as px
+    #     import plotly.graph_objects as go
+    #     import random
+
+    #     st.subheader("Vehicle Movement Over Time")
+
+    #     @st.cache_data
+    #     def load_filled_gps():
+    #         df = pd.read_csv("Problem-3/plots/gps_mapped_filled.csv", parse_dates=["timestamp"])
+    #         df["time_str"] = df["timestamp"].dt.strftime("%H:%M")
+    #         df["date"] = df["timestamp"].dt.date.astype(str)
+    #         return df
+
+    #     gps_filled = load_filled_gps()
+
+    #     # Select the date
+    #     selected_date = st.selectbox("Select a Date", sorted(gps_filled["date"].unique()))
+    #     day_df = gps_filled[gps_filled["date"] == selected_date]
+
+    #     # Select specific people
+    #     unique_people = sorted(day_df["label"].unique())
+    #     selected_people = st.multiselect("Select People to Display", unique_people, default=unique_people)
+
+    #     # Filter data
+    #     filtered_df = day_df[day_df["label"].isin(selected_people)]
+
+    #     # Assign consistent colors per person
+    #     if "color_map" not in st.session_state:
+    #         st.session_state.color_map = {}
+    #     for person in selected_people:
+    #         if person not in st.session_state.color_map:
+    #             st.session_state.color_map[person] = f"#{random.randint(0, 0xFFFFFF):06x}"
+    #     color_map = st.session_state.color_map
+
+    #     # Create animated plot
+    #     fig = px.scatter_mapbox(
+    #         filtered_df,
+    #         lat="lat",
+    #         lon="lon",
+    #         color="label",
+    #         animation_frame="time_str",
+    #         hover_name="label",
+    #         zoom=13,
+    #         height=700,
+    #         mapbox_style="carto-positron",
+    #         color_discrete_map=color_map,
+    #     )
+
+    #     fig.update_layout(
+    #         margin={"r":0,"t":0,"l":0,"b":0},
+    #         legend_title="Person",
+    #         mapbox=dict(center={"lat": filtered_df["lat"].mean(), "lon": filtered_df["lon"].mean()})
+    #     )
+
+    #     st.plotly_chart(fig, use_container_width=True)
+
+
     # --- Conclusion (Problem 3) ---
     with st.expander("📋 Summary / Conclusion (Problem 3)"):
         st.subheader('Conclusion')
